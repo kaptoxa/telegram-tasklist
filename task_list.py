@@ -22,7 +22,7 @@ class Task(NamedTuple):
     text: str
 
 
-def add_task(raw_message: str) -> Task:
+def add_task(raw_message: str, user_id: int) -> Task:
     """Добавляет новое сообщение.
     Принимает на вход текст сообщения, пришедшего в бот."""
     #parsed_message = _parse_message(raw_message)
@@ -30,18 +30,17 @@ def add_task(raw_message: str) -> Task:
         "text": raw_message,
         "created": _get_now_formatted(),
         "done": False,
-        "marked": False
+        "marked": False,
+        "user_id": user_id
     })
     return Task(id=None,
                    text=raw_message, done=False, marked=False)
 
 
-def all() -> List[Task]:
+def all(user_id: int) -> List[Task]:
     """Возвращает все задачи"""
     cursor = db.get_cursor()
-    cursor.execute(
-        "select id, text, done, marked "
-        "from tasklist ")
+    cursor.execute( f"select id, text, done, marked from tasklist where user_id=={user_id}")
     rows = cursor.fetchall()
     task_list = [Task(id=row[0], text=row[1], done=row[2], marked=row[3]) for row in rows]
     return task_list

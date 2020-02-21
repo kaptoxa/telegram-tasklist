@@ -3,6 +3,7 @@ create table tasklist(
     done boolean,
     marked boolean,
     created datetime,
-    text text
+    text text,
+    user_id integer
 );
 

@@ -38,7 +38,7 @@ async def del_task(message: types.Message):
 @dp.message_handler(commands=['all'])
 async def full_task_list(message: types.Message):
     """Отправляет весь список задач"""
-    full_list= task_list.all()
+    full_list= task_list.all(message.from_user.id)
     if not full_list:
         await message.answer("Не одбавлено ни одной задачи")
         return
@@ -56,7 +56,7 @@ async def full_task_list(message: types.Message):
 async def add_task(message: types.Message):
     """Добавляет новую задачу"""
     try:
-        task = task_list.add_task(message.text)
+        task = task_list.add_task(message.text, message.from_user.id)
     except exceptions.NotCorrectMessage as e:
         await message.answer(str(e))
         return
