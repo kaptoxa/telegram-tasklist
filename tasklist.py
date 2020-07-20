@@ -7,15 +7,20 @@ import pytz
 
 import db
 import exceptions
+from enum import Enum
 
+
+class TaskStage(Enum):
+    TODO = 1
+    IDEA = 0
+    DONE = 2
 
 
 class Task(NamedTuple):
-    """Структура добавленной в БД новой задачи"""
+    """Структура соотвествует добавленной в БД новой задачи"""
     id: Optional[int]
-    done: bool
+    stage: TaskStage
     marked: bool
-    idea: bool
     created: str
     completed: str
     text: str
@@ -33,9 +38,8 @@ class TaskListBot():
         #parsed_message = _parse_message(raw_message)
         f_now = _get_now_formatted()
         inserted_row_id = db.insert("tasklist", {
-            "done": False,
+            "stage": TaskStage.TODO.value,
             "marked": False,
-            "idea": False,
             "created": f_now,
             "completed": f_now,
             "text": raw_message,
@@ -43,25 +47,26 @@ class TaskListBot():
             "user_id": self.chat_id
         })
         return Task(id=None,
-                text=raw_message, description=raw_message, done=False, marked=False, idea=False, created=f_now, completed=f_now)
+                text=raw_message, description=raw_message, stage=TaskStage.TODO, marked=False, created=f_now, completed=f_now)
 
 
-    def done(self, taskid: int) -> Task:
-#        updated_row_id = db.update()
-#        return Task(id=None,
-#                text='', description=raw_message, done=True, marked=False, idea=False, created=f_now, completed=f_now)
-        return None
+    def update_task_stage(self, taskid: int, stage: TaskStage) -> bool:
+        cursor = db.get_cursor()
+        cursor.execute(
+            f"update tasklist set stage={stage.value} "
+            f"where tasklist.id={taskid}" )
+        return True
 
 
-    def idea(self, taskid: int) -> Task:
-#       updated_row_id = db.update()
-#        return Task(id=None,
-#                text=raw_message, description=raw_message, done=False, marked=False, idea=True, created=f_now, completed=f_now)
-        return None
+    def update_task_description(self, taskid: int, description: str) -> bool:
+        cursor = db.get_cursor()
+        cursor.execute(
+                f"update tasklist set description=\"{description}\" "
+                f"where tasklist.id={taskid}")
+        return True
 
 
-    
-    def all(self) -> List[Task]:
+    def tasks(self) -> List[Task]:
         """Возвращает все задачи"""
         cursor = db.get_cursor()
         cursor.execute( f"select * from tasklist where user_id=={self.chat_id}")
@@ -70,14 +75,13 @@ class TaskListBot():
         return task_list
 
 
+    def tasks_list(self, stage: TaskStage) -> List[Task]:
+        """Возвращает активные задачи"""
+        return list(filter(lambda task: task.stage == stage, self.tasks()))
+
     def starred(self) -> List[Task]:
         """Возвращает отмеченные задачи"""
-        return [filter(lambda task: task.marked == True, all())]
-
-
-    def ideas(self) -> List[Task]:
-        """Возвращает отмеченные задачи"""
-        return [filter(lambda task: task.idea == True, all())]
+        return list(filter(lambda task: task.marked, self.tasks()))
 
 
     def get_task(self, tid) -> Task:
