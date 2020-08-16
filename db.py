@@ -42,6 +42,10 @@ def get_cursor():
     return cursor
 
 
+def get_connection():
+    return conn
+
+
 def _init_db():
     """Инициализирует БД"""
     with open("createdb.sql", "r") as f:
