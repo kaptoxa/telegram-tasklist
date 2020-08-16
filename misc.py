@@ -8,7 +8,7 @@ from aiogram.utils.callback_data import CallbackData
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
-from aiogram.dispatcher.filters.state import State, StatesGroup
+#from aiogram.dispatcher.filters.state import State, StatesGroup
 
 from aiogram.utils.helper import Helper, HelperMode, ListItem
 
@@ -35,6 +35,10 @@ class Phase(Helper):
     EDIT_IDEA = ListItem()
     EDIT_TASK = ListItem()
     EDIT_ARCH = ListItem()
+
+    def get(stage):
+        return Phase.all()[(stage + 4) % 6]
+
 
 
 
