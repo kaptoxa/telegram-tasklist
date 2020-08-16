@@ -1,4 +1,3 @@
-# from remote_db import get_customer, get_orders_by_cid
 from keyboards import get_keyboard
 from aiogram import types, md
 from aiogram.dispatcher import FSMContext
@@ -9,8 +8,10 @@ from misc import bot, dp, todo_cb, task_cb, Phase, logger
 
 
 def format_post(task: Task) -> (str, types.InlineKeyboardMarkup):
+    logger.info(f" format_post :: {task.description}")
     text = md.text(
         md.hbold(task.text),
+        '',
         md.quote_html(task.description),
         '',  # just new empty line
         f"Создана: {task.created}",
@@ -30,56 +31,40 @@ def format_post(task: Task) -> (str, types.InlineKeyboardMarkup):
     del all_buttons[task.stage]
 
     markup = types.InlineKeyboardMarkup()
-    markup.row( *all_buttons.values()
-#        types.InlineKeyboardButton('Сделано!', callback_data=task_cb.new(id=task.id, action='done')),
-#        types.InlineKeyboardButton('В идеи!', callback_data=task_cb.new(id=task.id, action='idea')),
-#        types.InlineKeyboardButton('Удалить.', callback_data=task_cb.new(id=task.id, action='cancel')),
-    )
+    markup.row( *all_buttons.values())
     markup.add(types.InlineKeyboardButton('<< Back', callback_data=task_cb.new(id=task.id, action='list')))
     return text, markup
 
 
-async def show_tasklist(query: types.CallbackQuery, chat_id, stage, state: FSMContext):
+async def show_tasklist(query: types.CallbackQuery, stage, state: FSMContext):
     """Отправляет весь список задач"""
     data = await state.get_data()
     jbot = data['bot']
-    logger.info(stage)
+    logger.info(f"show_tasklist :: stage = {stage}")
     full_list = jbot.tasks_list(stage.value)
     if not full_list:
-        await query.message.answer(f"{stage} Сконцентрируйся и оставайся внимательным.")
+        empty_message = {0: "Нет идей? Хватит медитировать!", 1: "Список задач пуст", 2: "Архив пуст"}
+        await query.message.answer(empty_message[stage.value])
         return
 
     to_post = [(i.id, i.text) for i in full_list]
-    await query.message.edit_text(f"Задачи ваши Вам делать. {stage}",
+    await state.set_state(Phase.get(stage.value))
+    list_name = {0: "Список идей", 1: "Список задач", 2: "Архив"}
+    await query.message.edit_text(list_name[stage.value],
             reply_markup=get_keyboard(to_post))
 
 
 @dp.callback_query_handler(task_cb.filter(action='list'), state='*')
 async def query_list(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
-    logger.info(f"query_list1 {state.get_state()}")
     stage = TaskStage.TODO
     cur_state = await state.get_state()
-    logger.info(f"cur_state = {cur_state}, Phase.EDIT_IDEA = {Phase.EDIT_IDEA[0]}")
+    logger.info(f"query_list cur_state = {cur_state}")
     if Phase.EDIT_IDEA[0] in cur_state:
         stage = TaskStage.IDEA
     elif Phase.EDIT_ARCH[0] in cur_state:
         stage = TaskStage.DONE
 
-    await show_tasklist(query, query.from_user.id, stage, state)
-
-
-"""
-@dp.callback_query_handler(task_cb.filter(action='list'), state=Phase.EDIT_IDEA)
-async def query_list(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
-    logger.info(f"query_list2 {state.get_state()}")
-    await show_tasklist(query, query.from_user.id, TaskStage.IDEA)
-
-
-@dp.callback_query_handler(task_cb.filter(action='list'), state=Phase.EDIT_ARCH)
-async def query_list(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
-    logger.info(f"query_list3 {state}")
-    await show_tasklist(query, query.from_user.id, TaskStage.DONE)
-"""
+    await show_tasklist(query, stage, state)
 
 
 @dp.callback_query_handler(todo_cb.filter(action='view'), state='*')
@@ -95,6 +80,7 @@ async def query_view(query: types.CallbackQuery, callback_data: dict, state: FSM
 
     await state.update_data(task=task)
     logger.info(f"task = {task.stage}")
+    logger.info(f"data['task']")
 
     stage = TaskStage(task.stage)
     if stage == TaskStage.TODO:
@@ -129,13 +115,10 @@ async def query_taskedit(query: types.CallbackQuery, callback_data: dict, state:
 
     stage = TaskStage.TODO
     cur_state = await state.get_state()
-    logger.info(f"cur_state = {cur_state}, Phase.EDIT_IDEA = {Phase.EDIT_IDEA[0]}")
+    logger.info(f"cur_state = {cur_state}")
     if Phase.EDIT_IDEA[0] in cur_state:
-        print('!!!')
         stage = TaskStage.IDEA
     elif Phase.EDIT_ARCH[0] in cur_state:
         stage = TaskStage.DONE
 
-    await show_tasklist(query, chat_id, stage, state)
-#     await query_list(query, callback_data=tcb) #  task_cb.new(id=task.id, action='list'))
-
+    await show_tasklist(query, stage, state)

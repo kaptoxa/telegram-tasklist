@@ -32,15 +32,22 @@ async def full_task_list(message: types.Message, state: FSMContext):
 
     """Отправляет список задач"""
     stage = ['/ideas', '/todo', '/archive'].index(message.text)
+    logger.info(f"stage = {stage}")
 
-    await state.set_state(Phase.all()[stage])
+    await state.set_state(Phase.get(stage))
 
+    cur_state = await state.get_state()
+    logger.info(f"cur_state = {cur_state}")
+    
+    
     full_list = data['bot'].tasks_list(stage)
     if not full_list:
-        await message.answer("Туманным будущее ваше является.")
+        empty_message = {0: "Нет идей? Хватит медитировать!", 1: "Список задач пуст", 2: "Архив пуст"}
+        await message.answer(empty_message[stage])
         return
 
     to_post = [(i.id, i.text) for i in full_list]
-    await message.answer('Задачи ваши Вам делать.', reply_markup=get_keyboard(to_post))
+    list_name = {0: "Список идей:", 1: "Список задач:", 2: "Архив:"}
+    await message.answer(list_name[stage], reply_markup=get_keyboard(to_post))
 
 
