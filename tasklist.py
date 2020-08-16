@@ -46,7 +46,7 @@ class TaskListBot():
             "user_id": self.chat_id
         })
         return Task(id=None,
-                text=raw_message, description=raw_message, stage=TaskStage.TODO, marked=False, created=f_now, completed=f_now)
+                text=raw_message, description='', stage=TaskStage.TODO, marked=False, created=f_now, completed=f_now)
 
 
     def update_task_stage(self, taskid: int, stage: TaskStage) -> bool:
@@ -54,6 +54,7 @@ class TaskListBot():
         cursor.execute(
             f"update tasklist set stage={stage.value} "
             f"where tasklist.id={taskid}" )
+        db.get_connection().commit()
         return True
 
 
@@ -62,6 +63,7 @@ class TaskListBot():
         cursor.execute(
                 f"update tasklist set description=\"{description}\" "
                 f"where tasklist.id={taskid}")
+        db.get_connection().commit()
         return True
 
 
