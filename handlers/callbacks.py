@@ -1,11 +1,10 @@
-#from remote_db import get_customer, get_orders_by_cid
+# from remote_db import get_customer, get_orders_by_cid
 from keyboards import get_keyboard
 from aiogram import types, md
 from aiogram.dispatcher import FSMContext
 from tasklist import TaskListBot, Task, TaskStage
 
-from misc import bot, dp, todo_cb, task_cb, get_jedy, Phase, logger
-from pprint import pprint
+from misc import bot, dp, todo_cb, task_cb, Phase, logger
 
 
 
@@ -40,9 +39,10 @@ def format_post(task: Task) -> (str, types.InlineKeyboardMarkup):
     return text, markup
 
 
-async def show_tasklist(query: types.CallbackQuery, chat_id, stage):
+async def show_tasklist(query: types.CallbackQuery, chat_id, stage, state: FSMContext):
     """Отправляет весь список задач"""
-    jbot = get_jedy(chat_id)
+    data = await state.get_data()
+    jbot = data['bot']
     logger.info(stage)
     full_list = jbot.tasks_list(stage.value)
     if not full_list:
@@ -61,12 +61,11 @@ async def query_list(query: types.CallbackQuery, callback_data: dict, state: FSM
     cur_state = await state.get_state()
     logger.info(f"cur_state = {cur_state}, Phase.EDIT_IDEA = {Phase.EDIT_IDEA[0]}")
     if Phase.EDIT_IDEA[0] in cur_state:
-        print('!!!')
         stage = TaskStage.IDEA
     elif Phase.EDIT_ARCH[0] in cur_state:
         stage = TaskStage.DONE
 
-    await show_tasklist(query, query.from_user.id, stage)
+    await show_tasklist(query, query.from_user.id, stage, state)
 
 
 """
@@ -86,8 +85,8 @@ async def query_list(query: types.CallbackQuery, callback_data: dict, state: FSM
 @dp.callback_query_handler(todo_cb.filter(action='view'), state='*')
 async def query_view(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
     task_id = int(callback_data['id'])
-    chat_id = query.from_user.id
-    jbot = get_jedy(chat_id)
+    data = await state.get_data()
+    jbot = data['bot']
 
     logger.info(f"handlers/callback view task id = {task_id}!")
     task = jbot.get_task(task_id)
@@ -113,8 +112,8 @@ async def query_view(query: types.CallbackQuery, callback_data: dict, state: FSM
 async def query_taskedit(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
     task_id = int(callback_data['id'])
     action = callback_data['action']
-    chat_id = query.from_user.id
-    jbot = get_jedy(chat_id)
+    data = await state.get_data()
+    jbot = data['bot']
 
     task = jbot.get_task(task_id)
     if not task:
@@ -137,6 +136,6 @@ async def query_taskedit(query: types.CallbackQuery, callback_data: dict, state:
     elif Phase.EDIT_ARCH[0] in cur_state:
         stage = TaskStage.DONE
 
-    await show_tasklist(query, chat_id, stage)
+    await show_tasklist(query, chat_id, stage, state)
 #     await query_list(query, callback_data=tcb) #  task_cb.new(id=task.id, action='list'))
 

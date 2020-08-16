@@ -1,7 +1,6 @@
 """ Работа с задачами— их добавление, удаление, завершение"""
 import datetime
 from typing import List, NamedTuple, Optional
-from pprint import pprint
 
 import pytz
 
@@ -17,7 +16,7 @@ class TaskStage(Enum):
 
 
 class Task(NamedTuple):
-    """Структура соотвествует добавленной в БД новой задачи"""
+    """Структура соотвествует записи в БД"""
     id: Optional[int]
     stage: TaskStage
     marked: bool
@@ -100,17 +99,6 @@ class TaskListBot():
     def delete_task(self, row_id: int) -> None:
         """Удаляет задачу по её идентификатору"""
         db.delete("tasklist", row_id)
-
-
-#def _parse_message(raw_message: str) -> Message:
-#    """Парсит текст пришедшего сообщения о новой задаче."""
-            #raise exceptions.NotCorrectMessage(
-            #    "Не могу понять сообщение. Не используйте больше одной точки. "
-            #    "например:\nНаписать заявление. Подготовка к школе"
-            #    "Написать заявление - задача, Подготовка к школе - проект")
-#    task = raw_message
-#
-#    return Message(task=task)
 
 
 def _get_now_formatted() -> str:

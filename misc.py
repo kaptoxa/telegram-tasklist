@@ -29,9 +29,9 @@ dp = Dispatcher(bot, storage=storage)
 class Phase(Helper):
     mode = HelperMode.snake_case
 
-    IDEAS = ListItem()  
-    TASKS = ListItem()  # Will be represented in storage as 'Form:todo'
-    ARCHIVE = ListItem()  # Will be represented in storage as 'Form:archive'
+    IDEAS = ListItem()
+    TASKS = ListItem()
+    ARCHIVE = ListItem()
     EDIT_IDEA = ListItem()
     EDIT_TASK = ListItem()
     EDIT_ARCH = ListItem()
@@ -41,7 +41,7 @@ class Phase(Helper):
 todo_cb = CallbackData('todo', 'id', 'action')  # post:<id>:<action>
 task_cb = CallbackData('task', 'id', 'action')  # post:<id>:<action>
 
-
+"""
 chats = {}
 
 def get_jedy(chat_id):
@@ -49,8 +49,8 @@ def get_jedy(chat_id):
         chats[chat_id] = TaskListBot(chat_id)
     return chats[chat_id]
 
-
 async def shutdown(dp: Dispatcher):
     await dp.storage.close()
     await dp.storage.wait_closed()
     logger.info('Storage is closed!')
+"""
