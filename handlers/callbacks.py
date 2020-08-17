@@ -1,19 +1,19 @@
+from tasklist import TaskListBot, Task, TaskStage
+
 from keyboards import get_keyboard
 from aiogram import types, md
 from aiogram.dispatcher import FSMContext
-from tasklist import TaskListBot, Task, TaskStage
 
-from misc import bot, dp, todo_cb, task_cb, Phase, logger
+from misc import bot, dp, todo_cb, task_cb, Phase, logger, get_jedy
 
 
 
 def format_post(task: Task) -> (str, types.InlineKeyboardMarkup):
-    logger.info(f" format_post :: {task.description}")
+    logger.debug(f" format_post :: {task.description}")
+
     text = md.text(
-        md.hbold(task.text),
-        '',
-        md.quote_html(task.description),
-        '',  # just new empty line
+        md.hbold(task.text), '',
+        md.quote_html(task.description),'',
         f"Создана: {task.created}",
         sep = '\n',
     )
@@ -27,7 +27,6 @@ def format_post(task: Task) -> (str, types.InlineKeyboardMarkup):
         'cancel': types.InlineKeyboardButton('Удалить.',
             callback_data=task_cb.new(id=task.id, action='cancel'))
         }
-
     del all_buttons[task.stage]
 
     markup = types.InlineKeyboardMarkup()
@@ -38,17 +37,18 @@ def format_post(task: Task) -> (str, types.InlineKeyboardMarkup):
 
 async def show_tasklist(query: types.CallbackQuery, stage, state: FSMContext):
     """Отправляет весь список задач"""
-    data = await state.get_data()
-    jbot = data['bot']
-    logger.info(f"show_tasklist :: stage = {stage}")
+    logger.debug(f"show_tasklist :: stage = {stage}")
+
+    jbot = await get_jedy(query.from_user.id, state)
     full_list = jbot.tasks_list(stage.value)
     if not full_list:
         empty_message = {0: "Нет идей? Хватит медитировать!", 1: "Список задач пуст", 2: "Архив пуст"}
         await query.message.answer(empty_message[stage.value])
         return
 
-    to_post = [(i.id, i.text) for i in full_list]
     await state.set_state(Phase.get(stage.value))
+
+    to_post = [(i.id, i.text) for i in full_list]
     list_name = {0: "Список идей", 1: "Список задач", 2: "Архив"}
     await query.message.edit_text(list_name[stage.value],
             reply_markup=get_keyboard(to_post))
@@ -56,9 +56,10 @@ async def show_tasklist(query: types.CallbackQuery, stage, state: FSMContext):
 
 @dp.callback_query_handler(task_cb.filter(action='list'), state='*')
 async def query_list(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    logger.debug(f"query_list cur_state = {cur_state}")
+
     stage = TaskStage.TODO
     cur_state = await state.get_state()
-    logger.info(f"query_list cur_state = {cur_state}")
     if Phase.EDIT_IDEA[0] in cur_state:
         stage = TaskStage.IDEA
     elif Phase.EDIT_ARCH[0] in cur_state:
@@ -69,18 +70,15 @@ async def query_list(query: types.CallbackQuery, callback_data: dict, state: FSM
 
 @dp.callback_query_handler(todo_cb.filter(action='view'), state='*')
 async def query_view(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
-    task_id = int(callback_data['id'])
-    data = await state.get_data()
-    jbot = data['bot']
+    logger.debug(f"handlers/callback view task id = {task_id}!")
 
-    logger.info(f"handlers/callback view task id = {task_id}!")
+    task_id = int(callback_data['id'])
+    jbot = await get_jedy(query.from_user.id, state)
     task = jbot.get_task(task_id)
     if not task:
         return await query.answer('Error!')
 
     await state.update_data(task=task)
-    logger.info(f"task = {task.stage}")
-    logger.info(f"data['task']")
 
     stage = TaskStage(task.stage)
     if stage == TaskStage.TODO:
@@ -98,9 +96,8 @@ async def query_view(query: types.CallbackQuery, callback_data: dict, state: FSM
 async def query_taskedit(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
     task_id = int(callback_data['id'])
     action = callback_data['action']
-    data = await state.get_data()
-    jbot = data['bot']
 
+    jbot = await get_jedy(query.from_user.id, state)
     task = jbot.get_task(task_id)
     if not task:
         return await query.answer('Error!')
@@ -115,7 +112,6 @@ async def query_taskedit(query: types.CallbackQuery, callback_data: dict, state:
 
     stage = TaskStage.TODO
     cur_state = await state.get_state()
-    logger.info(f"cur_state = {cur_state}")
     if Phase.EDIT_IDEA[0] in cur_state:
         stage = TaskStage.IDEA
     elif Phase.EDIT_ARCH[0] in cur_state:

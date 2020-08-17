@@ -1,20 +1,19 @@
 import exceptions
+from tasklist import TaskListBot
+
 from keyboards import get_keyboard
 from aiogram import types
 from aiogram.dispatcher import FSMContext
-from tasklist import TaskListBot
 
-from misc import dp, Phase, logger
+from misc import dp, Phase, logger, get_jedy
 
 
 @dp.message_handler(state='*', commands=['start', 'help'])
 async def send_welcome(message: types.Message, state: FSMContext):
     """Отправляет приветственное сообщение и помощь по боту"""
-    logger.info(f"Send welcome handler text: {message.text} !")
+    logger.debug(f"Send welcome handler text: {message.text} !")
 
-    await state.update_data(bot=TaskListBot(message.from_user.id))
-
-    await state.set_state(Phase.TASKS)
+    await get_jedy(message.from_user.id, state)
 
     await message.answer(
         "Со cписком задач тебе Йода поможет.\n\n"
@@ -27,20 +26,14 @@ async def send_welcome(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state='*', commands=['todo', 'ideas', 'archive'])
 async def full_task_list(message: types.Message, state: FSMContext):
-    logger.info(f"Commands handler {message.text}")
-    data = await state.get_data()
+    """Отправляет список задач/идей/выполненного"""
+    logger.debug(f"Commands handler {message.text}")
+    jbot = await get_jedy(message.from_user.id, state)
 
-    """Отправляет список задач"""
     stage = ['/ideas', '/todo', '/archive'].index(message.text)
-    logger.info(f"stage = {stage}")
-
     await state.set_state(Phase.get(stage))
 
-    cur_state = await state.get_state()
-    logger.info(f"cur_state = {cur_state}")
-    
-    
-    full_list = data['bot'].tasks_list(stage)
+    full_list = jbot.tasks_list(stage)
     if not full_list:
         empty_message = {0: "Нет идей? Хватит медитировать!", 1: "Список задач пуст", 2: "Архив пуст"}
         await message.answer(empty_message[stage])
