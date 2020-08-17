@@ -37,6 +37,7 @@ class Phase(Helper):
     EDIT_ARCH = ListItem()
 
     def get(stage):
+    #  trick to avoid sorted items problem that Helper does alphabetically
         return Phase.all()[(stage + 4) % 6]
 
 
@@ -44,6 +45,17 @@ class Phase(Helper):
 
 todo_cb = CallbackData('todo', 'id', 'action')  # post:<id>:<action>
 task_cb = CallbackData('task', 'id', 'action')  # post:<id>:<action>
+
+
+async def get_jedy(chat_id, state: FSMContext):
+    data = await state.get_data()
+    if 'bot' not in data:
+        new_bot = TaskListBot(chat_id)
+        await state.update_data(bot=new_bot)
+        await state.set_state(Phase.TASKS)
+        return new_bot
+
+    return data['bot']
 
 """
 chats = {}
