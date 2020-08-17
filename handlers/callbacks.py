@@ -37,7 +37,6 @@ def format_post(task: Task) -> (str, types.InlineKeyboardMarkup):
 
 async def show_tasklist(query: types.CallbackQuery, stage, state: FSMContext):
     """Отправляет весь список задач"""
-    logger.debug(f"show_tasklist :: stage = {stage}")
 
     jbot = await get_jedy(query.from_user.id, state)
     full_list = jbot.tasks_list(stage.value)
@@ -56,8 +55,6 @@ async def show_tasklist(query: types.CallbackQuery, stage, state: FSMContext):
 
 @dp.callback_query_handler(task_cb.filter(action='list'), state='*')
 async def query_list(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
-    logger.debug(f"query_list cur_state = {cur_state}")
-
     stage = TaskStage.TODO
     cur_state = await state.get_state()
     if Phase.EDIT_IDEA[0] in cur_state:
@@ -70,8 +67,6 @@ async def query_list(query: types.CallbackQuery, callback_data: dict, state: FSM
 
 @dp.callback_query_handler(todo_cb.filter(action='view'), state='*')
 async def query_view(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
-    logger.debug(f"handlers/callback view task id = {task_id}!")
-
     task_id = int(callback_data['id'])
     jbot = await get_jedy(query.from_user.id, state)
     task = jbot.get_task(task_id)
@@ -79,7 +74,6 @@ async def query_view(query: types.CallbackQuery, callback_data: dict, state: FSM
         return await query.answer('Error!')
 
     await state.update_data(task=task)
-
     stage = TaskStage(task.stage)
     if stage == TaskStage.TODO:
         await state.set_state(Phase.EDIT_TASK[0])

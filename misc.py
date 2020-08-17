@@ -48,6 +48,10 @@ task_cb = CallbackData('task', 'id', 'action')  # post:<id>:<action>
 
 
 async def get_jedy(chat_id, state: FSMContext):
+    """ while storage is memory
+        we need to create TaskListBot object
+        every time after restart """
+
     data = await state.get_data()
     if 'bot' not in data:
         new_bot = TaskListBot(chat_id)
@@ -57,16 +61,3 @@ async def get_jedy(chat_id, state: FSMContext):
 
     return data['bot']
 
-"""
-chats = {}
-
-def get_jedy(chat_id):
-    if chat_id not in chats:
-        chats[chat_id] = TaskListBot(chat_id)
-    return chats[chat_id]
-
-async def shutdown(dp: Dispatcher):
-    await dp.storage.close()
-    await dp.storage.wait_closed()
-    logger.info('Storage is closed!')
-"""

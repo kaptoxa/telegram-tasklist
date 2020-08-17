@@ -12,6 +12,7 @@ async def add_task(message: types.Message, state: FSMContext):
     logger.debug(f"state = {await state.get_state()}, handler text phase editing!")
 
     bot = await get_jedy(message.from_user.id, state)
+    data = await state.get_data()
     bot.update_task_description(data['task'].id, message.text)
 
     answer_message = (
