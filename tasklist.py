@@ -61,7 +61,7 @@ class TaskListBot():
     def update_task_description(self, taskid: int, description: str) -> bool:
         cursor = db.get_cursor()
         cursor.execute(
-                f"update tasklist set description=\"{description}\" "
+                f"update tasklist set text=\"{description}\" "
                 f"where tasklist.id={taskid}")
         db.get_connection().commit()
         return True

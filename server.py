@@ -1,4 +1,4 @@
-"""Сервер Telegram бота, запускаемый непосредственно"""
+""" Telegram bot server to run"""
 from aiogram import executor, Dispatcher
 
 from misc import dp, logger

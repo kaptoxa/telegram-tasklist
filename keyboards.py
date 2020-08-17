@@ -2,9 +2,7 @@ from aiogram import types
 from misc import todo_cb
 
 def get_keyboard(tasks) -> types.InlineKeyboardMarkup:
-    """
-    Генерирует клавиатуру из списка задач
-    """
+    """ generate keyboard from tasklist """
     markup = types.InlineKeyboardMarkup()
     for tid, text in tasks:
         markup.add(

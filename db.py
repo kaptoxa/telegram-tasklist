@@ -47,7 +47,7 @@ def get_connection():
 
 
 def _init_db():
-    """Инициализирует БД"""
+    """ Initializing database """
     with open("createdb.sql", "r") as f:
         sql = f.read()
     cursor.executescript(sql)
@@ -55,7 +55,7 @@ def _init_db():
 
 
 def check_db_exists():
-    """Проверяет, инициализирована ли БД, если нет — инициализирует"""
+    """ if database was not created then we have to do it """
     cursor.execute("SELECT name FROM sqlite_master "
                    "WHERE type='table' AND name='tasklist'")
     table_exists = cursor.fetchall()

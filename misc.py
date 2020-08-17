@@ -1,6 +1,8 @@
 import logging
 
 import os
+import json
+
 from tasklist import TaskListBot
 
 from aiogram import Bot, Dispatcher, types
@@ -24,6 +26,8 @@ bot = Bot(token=API_TOKEN, parse_mode=types.ParseMode.HTML)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
+with open("replicas.json", "r") as r_file:
+    replicas = json.load(r_file)
 
 # States
 class Phase(Helper):
