@@ -1,27 +1,25 @@
 import exceptions
 from tasklist import TaskListBot
 
-from keyboards import get_keyboard
+from keyboards import get_keyboard, review_keyboard
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 
 from misc import dp, Phase, logger, get_jedy, replicas
 
 
-@dp.message_handler(state='*', commands=['start', 'help'])
+@dp.message_handler(state='*', commands=['start', 'help', 'howto', 'dzen', 'man'])
 async def send_welcome(message: types.Message, state: FSMContext):
     """Show hello message to help with bot"""
     logger.debug(f"Send welcome handler text: {message.text} !")
 
-    await get_jedy(message.from_user.id, state)
+    jbot = await get_jedy(message.from_user.id, state)
+    logger.info(f"is new user? {jbot.new_user(message.from_user.username)}")
 
-    await message.answer(replicas['/help'])
-#        "Со cписком задач тебе Йода поможет.\n\n"
-#        "Добавить задачу: просто наберите в чате 'купить хлеба'\n"
-#        "Вывести списки задач: /todo /ideas /archive\n"
-#        "Обзор провести: /review\n")
-        #"Кто вы узнать: /whoiam\n",
-#        "Советы слушать: /hints")
+    key = message.text
+    if key == '/start':
+        key = '/help'
+    await message.answer(replicas[key])
 
 
 @dp.message_handler(state='*', commands=['todo', 'ideas', 'archive'])
@@ -39,6 +37,22 @@ async def full_task_list(message: types.Message, state: FSMContext):
         return
 
     to_post = [(i.id, i.text) for i in full_list]
-    await message.answer(replicas['list'][str(stage)], reply_markup=get_keyboard(to_post))
+    text = f"{replicas['list'][str(stage)]} ({len(to_post)})"
+    await message.answer(text, reply_markup=get_keyboard(to_post))
 
 
+@dp.message_handler(state='*', commands=['review'])
+async def review(message: types.Message, state: FSMContext):
+    """Show todo tasklist to review tasks"""
+    logger.info(f"Review handler {message.text}")
+    jbot = await get_jedy(message.from_user.id, state)
+
+    stage = 1
+    await state.set_state(Phase.get(stage))
+    full_list = jbot.tasks_list(stage)
+    if not full_list:
+        await message.answer(replicas['empty_list'][str(stage)])
+        return
+
+    to_post = [(i.id, i.text) for i in full_list]
+    await message.answer(replicas['review'], reply_markup=review_keyboard(to_post))

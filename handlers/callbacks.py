@@ -1,6 +1,6 @@
 from tasklist import TaskListBot, Task, TaskStage
 
-from keyboards import get_keyboard
+from keyboards import get_keyboard, review_keyboard
 from aiogram import types, md
 from aiogram.dispatcher import FSMContext
 
@@ -10,11 +10,12 @@ from misc import Phase, get_jedy, replicas
 
 
 def format_post(task: Task) -> (str, types.InlineKeyboardMarkup):
-    logger.debug(f" format_post :: {task.description}")
+    logger.debug(f" format_post :: {task.text}")
 
     text = md.text(
         md.hbold(task.text), '',
-        f"{replicas['task']['created']}: {task.created}",
+        f"{replicas['task']['created_date']}: {task.created}",
+        f"{replicas['task']['changed_date']}: {task.changed}",
         sep = '\n',
     )
 
@@ -59,7 +60,8 @@ async def show_tasklist(query: types.CallbackQuery, state: FSMContext):
     await state.set_state(Phase.get(stage.value))
 
     to_post = [(i.id, i.text) for i in full_list]
-    await query.message.edit_text(replicas['list'][str(stage.value)],
+    text = f"{replicas['list'][str(stage.value)]} ({len(to_post)})"
+    await query.message.edit_text(text,
             reply_markup=get_keyboard(to_post))
 
 
@@ -86,7 +88,7 @@ async def query_view(query: types.CallbackQuery, callback_data: dict, state: FSM
         await state.set_state(Phase.EDIT_ARCH[0]) 
 
     text, markup = format_post(task)
-    await query.message.edit_text(text, reply_markup=markup)  #, parse_mode=types.ParseMode.MARKDOWN)
+    await query.message.edit_text(text, reply_markup=markup)
 
 
 @dp.callback_query_handler(task_cb.filter(action=['done', 'idea', 'todo', 'cancel']), state='*')
@@ -108,3 +110,24 @@ async def query_taskedit(query: types.CallbackQuery, callback_data: dict, state:
     await query.answer(replicas['task']['changed'])
 
     await show_tasklist(query, state)
+
+
+@dp.callback_query_handler(todo_cb.filter(action=['review_done']), state='*')
+async def query_task_done(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    task_id = int(callback_data['id'])
+    logger.info(f"query_task_done: {task_id}")
+    jbot = await get_jedy(query.from_user.id, state)
+
+    task = jbot.get_task(task_id)
+    if not task:
+        return await query.answer('Error!')
+    jbot.update_task_stage(task.id, TaskStage(2))
+
+    full_list = jbot.tasks_list(1)
+    if not full_list:
+        await query.message.edit_text(replicas['victory'])
+        return
+
+    to_post = [(i.id, i.text) for i in full_list]
+    await query.message.edit_text(replicas['review'],
+            reply_markup=review_keyboard(to_post))

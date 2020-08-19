@@ -1,11 +1,18 @@
 create table tasklist(
     id integer primary key,
     stage integer,
-    marked boolean,
     created datetime,
-    completed datetime,
+    changed datetime,
     text text,
-    description text,
-    user_id integer
+    tags text,
+    user_id integer,
+    FOREIGN KEY(user_id) REFERENCES users(id)
 );
+
+create table users(
+    id integer primary key,
+    name varchar(255),
+    days integer
+);
+
 

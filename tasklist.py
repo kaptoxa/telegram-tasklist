@@ -19,11 +19,10 @@ class Task(NamedTuple):
     """Структура соотвествует записи в БД"""
     id: Optional[int]
     stage: TaskStage
-    marked: bool
     created: str
-    completed: str
+    changed: str
     text: str
-    description: str
+    tags: str
 
 
 class TaskListBot():
@@ -31,64 +30,78 @@ class TaskListBot():
     def __init__(self, chat_id):
         self.chat_id = chat_id
 
+    def new_user(self, name):
+        """ new user """
+        cursor = db.get_cursor()
+        cursor.execute( f"select * from users where id={self.chat_id}")
+        row = cursor.fetchone()
+        if row:
+            return False
+
+        inserted_row_id = db.insert("users", {
+            "id": self.chat_id,
+            "name": name,
+            "days": 1
+        })
+        return inserted_row_id
 
     def add(self, raw_message: str) -> Task:
-        """Добавляет задачу"""
-        #parsed_message = _parse_message(raw_message)
+        """ new task """
         f_now = _get_now_formatted()
         inserted_row_id = db.insert("tasklist", {
             "stage": TaskStage.TODO.value,
-            "marked": False,
             "created": f_now,
-            "completed": f_now,
+            "changed": f_now,
             "text": raw_message,
-            "description": raw_message,
+            "tags": raw_message,
             "user_id": self.chat_id
         })
         return Task(id=None,
-                text=raw_message, description='', stage=TaskStage.TODO, marked=False, created=f_now, completed=f_now)
-
+                text=raw_message, tags='', stage=TaskStage.TODO, created=f_now, changed=f_now)
 
     def update_task_stage(self, taskid: int, stage: TaskStage) -> bool:
         cursor = db.get_cursor()
+        print(stage)
         cursor.execute(
-            f"update tasklist set stage={stage.value} "
-            f"where tasklist.id={taskid}" )
+            f"update tasklist set stage = {stage.value}, "
+            f"changed = \"{_get_now_formatted()}\" "
+            f"where tasklist.id = {taskid}" )
         db.get_connection().commit()
         return True
 
-
-    def update_task_description(self, taskid: int, description: str) -> bool:
+    def update_task_text(self, taskid: int, text: str) -> bool:
         cursor = db.get_cursor()
         cursor.execute(
-                f"update tasklist set text=\"{description}\" "
+                f"update tasklist set text=\"{text}\","
+                f"changed=\"{_get_now_formatted()}\" "
                 f"where tasklist.id={taskid}")
         db.get_connection().commit()
         return True
 
+    def update_days(self, days: int) -> bool:
+        cursor = db.get_cursor()
+        cursor.execute(
+                f"update users set days={days} "
+                f"where users.id={self.chat_id}")
+        db.get_connection().commit()
+        return True
 
     def tasks(self) -> List[Task]:
-        """Возвращает все задачи"""
+        """ return all tasks """
         cursor = db.get_cursor()
         cursor.execute( f"select * from tasklist where user_id=={self.chat_id}")
         rows = cursor.fetchall()
         task_list = [Task(*row[:-1]) for row in rows]  # отсекаем последнее поле, т.к. это chat id
         return task_list
 
-
     def tasks_list(self, stage: TaskStage) -> List[Task]:
-        """Возвращает активные задачи"""
+        """ return tasks for the stage """
         return list(filter(lambda task: task.stage == stage, self.tasks()))
 
-    def starred(self) -> List[Task]:
-        """Возвращает отмеченные задачи"""
-        return list(filter(lambda task: task.marked, self.tasks()))
-
-
     def get_task(self, tid) -> Task:
-        """Возвращает задачу по её id"""
+        """ return the task by its id """
         cursor = db.get_cursor()
-        cursor.execute( f"select * from tasklist where user_id=={self.chat_id} and id={tid}")
+        cursor.execute( f"select * from tasklist where user_id={self.chat_id} and id={tid}")
         row = cursor.fetchone()
         if row:
             task = Task(*row[:-1])
@@ -99,7 +112,6 @@ class TaskListBot():
 
 
     def delete_task(self, row_id: int) -> None:
-        """Удаляет задачу по её идентификатору"""
         db.delete("tasklist", row_id)
 
 

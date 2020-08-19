@@ -7,17 +7,18 @@ from misc import Phase, dp, logger, get_jedy
 
 
 @dp.message_handler(state=Phase.EDIT_TASK | Phase.EDIT_IDEA | Phase.EDIT_ARCH)
-async def add_task(message: types.Message, state: FSMContext):
+async def edit_task(message: types.Message, state: FSMContext):
     """Add task descriprion"""
     logger.debug(f"state = {await state.get_state()}, handler text phase editing!")
 
     bot = await get_jedy(message.from_user.id, state)
     data = await state.get_data()
-    bot.update_task_description(data['task'].id, message.text)
+    bot.update_task_text(data['task'].id, message.text)
 
     answer_message = (
         f"Описание задачи дополнено.\n")
     await message.answer(answer_message)
+
 
 @dp.message_handler(state='*', content_types=types.ContentTypes.TEXT)
 async def add_task(message: types.Message, state: FSMContext):

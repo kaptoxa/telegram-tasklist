@@ -12,3 +12,16 @@ def get_keyboard(tasks) -> types.InlineKeyboardMarkup:
         )
     return markup
 
+
+def review_keyboard(tasks) -> types.InlineKeyboardMarkup:
+    """ generate review keyboard """
+    markup = types.InlineKeyboardMarkup()
+    for tid, text in tasks:
+        markup.row(
+            types.InlineKeyboardButton(
+                text,
+                callback_data=todo_cb.new(id=tid, action='review_done')),
+        )
+    return markup
+
+
