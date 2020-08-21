@@ -3,7 +3,7 @@ import logging
 import os
 import json
 
-from tasklist import TaskListBot
+from tasklist import TaskListBot, TaskStage
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils.callback_data import CallbackData
@@ -43,6 +43,18 @@ class Phase(Helper):
     def get(stage):
     #  trick to avoid sorted items problem that Helper does alphabetically
         return Phase.all()[(stage + 4) % 6]
+
+    async def get_stage(state: FSMContext):
+        stage = TaskStage.TODO
+        cur_state = await state.get_state()
+        if Phase.EDIT_IDEA[0] in cur_state or Phase.IDEAS[0] in cur_state:
+            stage = TaskStage.IDEA
+        elif Phase.EDIT_ARCH[0] in cur_state or Phase.ARCHIVE[0] in cur_state:
+            stage = TaskStage.DONE
+
+        return stage
+
+
 
 
 

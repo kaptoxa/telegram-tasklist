@@ -32,8 +32,7 @@ def land_user(uid, days):
         print(f"task {tid} was changed at {changed}")
         task_changed = datetime.strptime(changed, "%Y-%m-%d %H:%M:%S").replace(tzinfo=pytz.timezone("Europe/Moscow"))
         delta = task_changed - now
-        minutes = delta.seconds % 3600 // 60
-        if minutes > days:
+        if delta.days > days:
             task_to_ideas += [str(tid)]
 
     if task_to_ideas:

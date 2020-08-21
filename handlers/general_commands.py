@@ -56,3 +56,22 @@ async def review(message: types.Message, state: FSMContext):
 
     to_post = [(i.id, i.text) for i in full_list]
     await message.answer(replicas['review'], reply_markup=review_keyboard(to_post))
+
+
+@dp.message_handler(state='*', commands=['tag'])
+async def tag(message: types.Message, state: FSMContext):
+    """Show task for the tag"""
+    logger.info(f"Tag handler {message.text}")
+    jbot = await get_jedy(message.from_user.id, state)
+    tag = message.text.split()[1]
+
+    stage = await Phase.get_stage(state)
+    logger.info(f"stage = {stage}")
+    full_list = jbot.tag_list(tag, stage)
+    if not full_list:
+        await message.answer(replicas['no_task4tag'])
+        return
+
+    to_post = [(i.id, i.text) for i in full_list]
+    text = f"{replicas['tag_tasks']} {tag} ({str(len(to_post))})"
+    await message.answer(text, reply_markup=get_keyboard(to_post))

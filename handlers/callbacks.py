@@ -13,7 +13,7 @@ def format_post(task: Task) -> (str, types.InlineKeyboardMarkup):
     logger.debug(f" format_post :: {task.text}")
 
     text = md.text(
-        md.hbold(task.text), '',
+        md.hbold(task.text), '', md.hbold('tags:', task.tags),
         f"{replicas['task']['created_date']}: {task.created}",
         f"{replicas['task']['changed_date']}: {task.changed}",
         sep = '\n',
@@ -35,7 +35,7 @@ def format_post(task: Task) -> (str, types.InlineKeyboardMarkup):
     markup.add(types.InlineKeyboardButton('<< Back', callback_data=task_cb.new(id=task.id, action='list')))
     return text, markup
 
-
+"""
 async def get_stage(state: FSMContext):
     stage = TaskStage.TODO
     cur_state = await state.get_state()
@@ -45,13 +45,13 @@ async def get_stage(state: FSMContext):
         stage = TaskStage.DONE
 
     return stage
-
+"""
 
 async def show_tasklist(query: types.CallbackQuery, state: FSMContext):
     """Fill whole tasklist"""
 
     jbot = await get_jedy(query.from_user.id, state)
-    stage = await get_stage(state)
+    stage = await Phase.get_stage(state)
     full_list = jbot.tasks_list(stage.value)
     if not full_list:
         await query.message.answer(replicas['empty_list'][str(stage.value)])

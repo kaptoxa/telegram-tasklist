@@ -47,17 +47,18 @@ class TaskListBot():
 
     def add(self, raw_message: str) -> Task:
         """ new task """
+        text, tags = _parse_message(raw_message)
         f_now = _get_now_formatted()
         inserted_row_id = db.insert("tasklist", {
             "stage": TaskStage.TODO.value,
             "created": f_now,
             "changed": f_now,
-            "text": raw_message,
-            "tags": raw_message,
+            "text": text,
+            "tags": tags,
             "user_id": self.chat_id
         })
         return Task(id=None,
-                text=raw_message, tags='', stage=TaskStage.TODO, created=f_now, changed=f_now)
+                text=text, tags=tags, stage=TaskStage.TODO, created=f_now, changed=f_now)
 
     def update_task_stage(self, taskid: int, stage: TaskStage) -> bool:
         cursor = db.get_cursor()
@@ -91,12 +92,15 @@ class TaskListBot():
         cursor = db.get_cursor()
         cursor.execute( f"select * from tasklist where user_id=={self.chat_id}")
         rows = cursor.fetchall()
-        task_list = [Task(*row[:-1]) for row in rows]  # отсекаем последнее поле, т.к. это chat id
+        task_list = [Task(*row[:-1]) for row in rows]  # clip this field because this is chat id
         return task_list
 
     def tasks_list(self, stage: TaskStage) -> List[Task]:
         """ return tasks for the stage """
         return list(filter(lambda task: task.stage == stage, self.tasks()))
+
+    def tag_list(self, tag, stage: TaskStage) -> List[Task]:
+        return list(filter(lambda task: (tag in task.tags), self.tasks_list(stage.value)))
 
     def get_task(self, tid) -> Task:
         """ return the task by its id """
@@ -126,3 +130,13 @@ def _get_now_datetime() -> datetime.datetime:
     now = datetime.datetime.now(tz)
     return now
 
+
+def _parse_message(msg):
+    task = []
+    tags = []
+    for word in msg.split():
+        if word[0] == '#':
+            tags += [word]
+        else:
+            task += [word]
+    return ' '.join(task), ' '.join(tags)
