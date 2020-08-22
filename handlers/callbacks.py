@@ -35,17 +35,6 @@ def format_post(task: Task) -> (str, types.InlineKeyboardMarkup):
     markup.add(types.InlineKeyboardButton('<< Back', callback_data=task_cb.new(id=task.id, action='list')))
     return text, markup
 
-"""
-async def get_stage(state: FSMContext):
-    stage = TaskStage.TODO
-    cur_state = await state.get_state()
-    if Phase.EDIT_IDEA[0] in cur_state:
-        stage = TaskStage.IDEA
-    elif Phase.EDIT_ARCH[0] in cur_state:
-        stage = TaskStage.DONE
-
-    return stage
-"""
 
 async def show_tasklist(query: types.CallbackQuery, state: FSMContext):
     """Fill whole tasklist"""
