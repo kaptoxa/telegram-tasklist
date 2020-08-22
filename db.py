@@ -1,3 +1,7 @@
+"""
+Now we use sqlite3 for db, but we should be able to change it,
+that's why we have this file.
+"""
 import os
 from typing import Dict, List, Tuple
 
@@ -19,17 +23,31 @@ def insert(table: str, column_values: Dict):
     conn.commit()
 
 
-def fetchall(table: str, columns: List[str]) -> List[Tuple]:
+def update(table: str, column_values, conditions: Dict):
+    changes = ', '.join(f"{key}={value}"
+                        for key, value in column_values.items())
+    condition = ' AND '.join(f"{key} {oper} {value}"
+                        for key, (oper, value) in conditions.items())
+    cursor.execute(
+        f"UPDATE {table} SET {changes} "
+        f"WHERE {condition}")
+    conn.commit()
+
+
+def fetchall(table: str, columns: List[str], conditions: Dict) -> List[Tuple]:
     columns_joined = ", ".join(columns)
-    cursor.execute(f"SELECT {columns_joined} FROM {table}")
-    rows = cursor.fetchall()
-    result = []
-    for row in rows:
-        dict_row = {}
-        for index, column in enumerate(columns):
-            dict_row[column] = row[index]
-        result.append(dict_row)
-    return result
+    condition = ' AND '.join(f"{key} {oper} {value}"
+                for key, (oper, value) in conditions.items()) if conditions else ''
+    cursor.execute(f"SELECT {columns_joined} FROM {table} WHERE {condition}")
+    return cursor.fetchall()
+
+
+def fetchone(table: str, columns: List[str], conditions: Dict) -> List[Tuple]:
+    columns_joined = ", ".join(columns)
+    condition = ' AND '.join(f"{key} {oper} {value}"
+                for key, (oper, value) in conditions.items()) if conditions else ''
+    cursor.execute(f"SELECT {columns_joined} FROM {table} WHERE {condition}")
+    return cursor.fetchone()
 
 
 def delete(table: str, row_id: int) -> None:

@@ -1,4 +1,4 @@
-""" Работа с задачами— их добавление, удаление, завершение"""
+""" We create one bot for one user to work with his tasks """
 import datetime
 from typing import List, NamedTuple, Optional
 
@@ -16,7 +16,7 @@ class TaskStage(Enum):
 
 
 class Task(NamedTuple):
-    """Структура соотвествует записи в БД"""
+    """Tuple structure respondes a record in DB"""
     id: Optional[int]
     stage: TaskStage
     created: str
@@ -31,7 +31,6 @@ class TaskListBot():
         self.chat_id = chat_id
 
     def new_user(self, name):
-        """ new user """
         cursor = db.get_cursor()
         cursor.execute( f"select * from users where id={self.chat_id}")
         row = cursor.fetchone()
@@ -57,41 +56,32 @@ class TaskListBot():
             "tags": tags,
             "user_id": self.chat_id
         })
-        return Task(id=None,
-                text=text, tags=tags, stage=TaskStage.TODO, created=f_now, changed=f_now)
+        return Task(id=None, text=text, tags=tags,
+                    stage=TaskStage.TODO, created=f_now, changed=f_now)
 
     def update_task_stage(self, taskid: int, stage: TaskStage) -> bool:
-        cursor = db.get_cursor()
-        print(stage)
-        cursor.execute(
-            f"update tasklist set stage = {stage.value}, "
-            f"changed = \"{_get_now_formatted()}\" "
-            f"where tasklist.id = {taskid}" )
-        db.get_connection().commit()
+        db.update("tasklist", {
+                    "stage": stage.value,
+                    "changed": f"\"{_get_now_formatted()}\""},
+                    {"id": ("=", taskid)})
         return True
 
     def update_task_text(self, taskid: int, text: str) -> bool:
-        cursor = db.get_cursor()
-        cursor.execute(
-                f"update tasklist set text=\"{text}\","
-                f"changed=\"{_get_now_formatted()}\" "
-                f"where tasklist.id={taskid}")
-        db.get_connection().commit()
+        db.update("tasklist", {
+                    "text": f"\"{text}\"",
+                    "changed": f"\"{_get_now_formatted()}\""},
+                    {"id": ("=", taskid)})
         return True
 
     def update_days(self, days: int) -> bool:
-        cursor = db.get_cursor()
-        cursor.execute(
-                f"update users set days={days} "
-                f"where users.id={self.chat_id}")
-        db.get_connection().commit()
+        db.update("users", {"days": days},
+                    {"id": ("=", self.chat_id)})
         return True
 
     def tasks(self) -> List[Task]:
         """ return all tasks """
-        cursor = db.get_cursor()
-        cursor.execute( f"select * from tasklist where user_id=={self.chat_id}")
-        rows = cursor.fetchall()
+        rows = db.fetchall("tasklist", ["*"],
+                    {"user_id": ("=", self.chat_id)})
         task_list = [Task(*row[:-1]) for row in rows]  # clip this field because this is chat id
         return task_list
 
@@ -104,9 +94,9 @@ class TaskListBot():
 
     def get_task(self, tid) -> Task:
         """ return the task by its id """
-        cursor = db.get_cursor()
-        cursor.execute( f"select * from tasklist where user_id={self.chat_id} and id={tid}")
-        row = cursor.fetchone()
+        row = db.fetchone("tasklist", ["*"],
+                {"user_id": ("=", self.chat_id),
+                "id": ("=", tid)})
         if row:
             task = Task(*row[:-1])
             return task
@@ -120,18 +110,17 @@ class TaskListBot():
 
 
 def _get_now_formatted() -> str:
-    """Возвращает сегодняшнюю дату строкой"""
     return _get_now_datetime().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def _get_now_datetime() -> datetime.datetime:
-    """Возвращает сегодняшний datetime с учётом времненной зоны Мск."""
     tz = pytz.timezone("Europe/Moscow")
     now = datetime.datetime.now(tz)
     return now
 
 
 def _parse_message(msg):
+    """ tags are words that started with '#' """
     task = []
     tags = []
     for word in msg.split():
