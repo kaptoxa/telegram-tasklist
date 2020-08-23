@@ -12,9 +12,9 @@ cursor = conn.cursor()
 
 
 def insert(table: str, column_values: Dict):
-    columns = ', '.join( column_values.keys() )
+    columns = ', '.join(column_values.keys())
     values = [tuple(column_values.values())]
-    placeholders = ", ".join( "?" * len(column_values.keys()) )
+    placeholders = ", ".join("?" * len(column_values.keys()))
     cursor.executemany(
         f"INSERT INTO {table} "
         f"({columns}) "
@@ -27,7 +27,7 @@ def update(table: str, column_values, conditions: Dict):
     changes = ', '.join(f"{key}={value}"
                         for key, value in column_values.items())
     condition = ' AND '.join(f"{key} {oper} {value}"
-                        for key, (oper, value) in conditions.items())
+        for key, (oper, value) in conditions.items())
     cursor.execute(
         f"UPDATE {table} SET {changes} "
         f"WHERE {condition}")
@@ -37,7 +37,7 @@ def update(table: str, column_values, conditions: Dict):
 def fetchall(table: str, columns: List[str], conditions: Dict) -> List[Tuple]:
     columns_joined = ", ".join(columns)
     condition = ' AND '.join(f"{key} {oper} {value}"
-                for key, (oper, value) in conditions.items()) if conditions else ''
+        for key, (oper, value) in conditions.items()) if conditions else ''
     cursor.execute(f"SELECT {columns_joined} FROM {table} WHERE {condition}")
     return cursor.fetchall()
 
@@ -45,7 +45,7 @@ def fetchall(table: str, columns: List[str], conditions: Dict) -> List[Tuple]:
 def fetchone(table: str, columns: List[str], conditions: Dict) -> List[Tuple]:
     columns_joined = ", ".join(columns)
     condition = ' AND '.join(f"{key} {oper} {value}"
-                for key, (oper, value) in conditions.items()) if conditions else ''
+        for key, (oper, value) in conditions.items()) if conditions else ''
     cursor.execute(f"SELECT {columns_joined} FROM {table} WHERE {condition}")
     return cursor.fetchone()
 
@@ -80,5 +80,6 @@ def check_db_exists():
     if table_exists:
         return
     _init_db()
+
 
 check_db_exists()
