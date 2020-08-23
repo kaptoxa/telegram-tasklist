@@ -82,15 +82,17 @@ class TaskListBot():
         """ return all tasks """
         rows = db.fetchall("tasklist", ["*"],
                     {"user_id": ("=", self.chat_id)})
-        task_list = [Task(*row[:-1]) for row in rows]  # clip this field because this is chat id
+        task_list = [Task(*row[:-1]) for row in rows]
+        # clip this field because this is chat id
         return task_list
 
     def tasks_list(self, stage: TaskStage) -> List[Task]:
         """ return tasks for the stage """
-        return list(filter(lambda task: task.stage == stage, self.tasks()))
+        return list(filter(lambda task: task.stage == stage.value, self.tasks()))
 
-    def tag_list(self, tag, stage: TaskStage) -> List[Task]:
-        return list(filter(lambda task: (tag in task.tags), self.tasks_list(stage.value)))
+    def tag_list(self, tag: str, stage: TaskStage) -> List[Task]:
+        return list(filter(lambda task: (tag in task.tags),
+                self.tasks_list(stage)))
 
     def get_task(self, tid) -> Task:
         """ return the task by its id """

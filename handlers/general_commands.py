@@ -1,11 +1,12 @@
 import exceptions
-from tasklist import TaskListBot
+from tasklist import TaskListBot, TaskStage
+from phase import Phase
 
 from keyboards import get_keyboard, review_keyboard
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 
-from misc import dp, Phase, logger, get_jedy, replicas
+from misc import dp, logger, get_jedy, replicas
 
 
 @dp.message_handler(state='*', commands=['start', 'help', 'howto', 'dzen', 'man'])
@@ -28,12 +29,12 @@ async def full_task_list(message: types.Message, state: FSMContext):
     logger.debug(f"Commands handler {message.text}")
     jbot = await get_jedy(message.from_user.id, state)
 
-    stage = ['/ideas', '/todo', '/archive'].index(message.text)
+    stage = TaskStage(['/ideas', '/todo', '/archive'].index(message.text))
     await state.set_state(Phase.get(stage))
 
     full_list = jbot.tasks_list(stage)
     if not full_list:
-        await message.answer(replicas['empty_list'][str(stage)])
+        await message.answer(replicas['empty_list'][str(stage.value)])
         return
 
     to_post = [(i.id, i.text) for i in full_list]
@@ -47,11 +48,11 @@ async def review(message: types.Message, state: FSMContext):
     logger.info(f"Review handler {message.text}")
     jbot = await get_jedy(message.from_user.id, state)
 
-    stage = 1
+    stage = TaskStage.TODO
     await state.set_state(Phase.get(stage))
     full_list = jbot.tasks_list(stage)
     if not full_list:
-        await message.answer(replicas['empty_list'][str(stage)])
+        await message.answer(replicas['empty_list'][str(stage.value)])
         return
 
     to_post = [(i.id, i.text) for i in full_list]
@@ -66,7 +67,6 @@ async def tag(message: types.Message, state: FSMContext):
     tag = message.text.split()[1]
 
     stage = await Phase.get_stage(state)
-    logger.info(f"stage = {stage}")
     full_list = jbot.tag_list(tag, stage)
     if not full_list:
         await message.answer(replicas['no_task4tag'])
@@ -75,3 +75,18 @@ async def tag(message: types.Message, state: FSMContext):
     to_post = [(i.id, i.text) for i in full_list]
     text = f"{replicas['tag_tasks']} {tag} ({str(len(to_post))})"
     await message.answer(text, reply_markup=get_keyboard(to_post))
+
+
+@dp.message_handler(state='*', commands=['days'])
+async def tag(message: types.Message, state: FSMContext):
+    """ Set days parameter to X """
+    logger.info(f"Tag handler {message.text}")
+    jbot = await get_jedy(message.from_user.id, state)
+    try:
+        x = int(message.text.split()[1])
+    except ValueError:
+        await message.answer(replicas['wrong_days'])
+        return
+
+    jbot.update_days(x)
+    await message.answer(replicas['days'])

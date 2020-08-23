@@ -1,11 +1,12 @@
 from tasklist import TaskListBot, Task, TaskStage
+from phase import Phase
 
 from keyboards import get_keyboard, review_keyboard
 from aiogram import types, md
 from aiogram.dispatcher import FSMContext
 
 from misc import logger, bot, dp, todo_cb, task_cb
-from misc import Phase, get_jedy, replicas
+from misc import get_jedy, replicas
 
 
 
@@ -35,32 +36,21 @@ def format_post(task: Task) -> (str, types.InlineKeyboardMarkup):
     markup.add(types.InlineKeyboardButton('<< Back', callback_data=task_cb.new(id=task.id, action='list')))
     return text, markup
 
-"""
-async def get_stage(state: FSMContext):
-    stage = TaskStage.TODO
-    cur_state = await state.get_state()
-    if Phase.EDIT_IDEA[0] in cur_state:
-        stage = TaskStage.IDEA
-    elif Phase.EDIT_ARCH[0] in cur_state:
-        stage = TaskStage.DONE
-
-    return stage
-"""
 
 async def show_tasklist(query: types.CallbackQuery, state: FSMContext):
     """Fill whole tasklist"""
 
     jbot = await get_jedy(query.from_user.id, state)
     stage = await Phase.get_stage(state)
-    full_list = jbot.tasks_list(stage.value)
+    full_list = jbot.tasks_list(stage)
     if not full_list:
-        await query.message.answer(replicas['empty_list'][str(stage.value)])
+        await query.message.answer(replicas['empty_list'][str(stage)])
         return
 
-    await state.set_state(Phase.get(stage.value))
+    await state.set_state(Phase.get(stage))
 
     to_post = [(i.id, i.text) for i in full_list]
-    text = f"{replicas['list'][str(stage.value)]} ({len(to_post)})"
+    text = f"{replicas['list'][str(stage)]} ({len(to_post)})"
     await query.message.edit_text(text,
             reply_markup=get_keyboard(to_post))
 

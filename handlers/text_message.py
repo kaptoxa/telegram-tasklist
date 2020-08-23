@@ -1,9 +1,11 @@
 import exceptions
 from tasklist import TaskListBot
+from phase import Phase
+
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 
-from misc import Phase, dp, logger, get_jedy
+from misc import dp, logger, get_jedy
 
 
 @dp.message_handler(state=Phase.EDIT_TASK | Phase.EDIT_IDEA | Phase.EDIT_ARCH)

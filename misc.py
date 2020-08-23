@@ -3,16 +3,14 @@ import logging
 import os
 import json
 
-from tasklist import TaskListBot, TaskStage
+from tasklist import TaskListBot
+from phase import Phase
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils.callback_data import CallbackData
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
-#from aiogram.dispatcher.filters.state import State, StatesGroup
-
-from aiogram.utils.helper import Helper, HelperMode, ListItem
 
 
 
@@ -28,35 +26,6 @@ dp = Dispatcher(bot, storage=storage)
 
 with open("replicas.json", "r") as r_file:
     replicas = json.load(r_file)
-
-# States
-class Phase(Helper):
-    mode = HelperMode.snake_case
-
-    IDEAS = ListItem()
-    TASKS = ListItem()
-    ARCHIVE = ListItem()
-    EDIT_IDEA = ListItem()
-    EDIT_TASK = ListItem()
-    EDIT_ARCH = ListItem()
-
-    def get(stage):
-    #  trick to avoid sorted items problem that Helper does alphabetically
-        return Phase.all()[(stage + 4) % 6]
-
-    async def get_stage(state: FSMContext):
-        stage = TaskStage.TODO
-        cur_state = await state.get_state()
-        if Phase.EDIT_IDEA[0] in cur_state or Phase.IDEAS[0] in cur_state:
-            stage = TaskStage.IDEA
-        elif Phase.EDIT_ARCH[0] in cur_state or Phase.ARCHIVE[0] in cur_state:
-            stage = TaskStage.DONE
-
-        return stage
-
-
-
-
 
 
 todo_cb = CallbackData('todo', 'id', 'action')  # post:<id>:<action>
