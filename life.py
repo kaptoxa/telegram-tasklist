@@ -16,6 +16,7 @@ def _get_now_datetime() -> datetime:
     now = datetime.now(tz)
     return now
 
+
 def land_user(uid, days):
     """ life lands users because they soaring in the clouds """
     cursor = db.get_cursor()
@@ -30,7 +31,10 @@ def land_user(uid, days):
     task_to_ideas = []
     for tid, changed in rows:
         print(f"task {tid} was changed at {changed}")
-        task_changed = datetime.strptime(changed, "%Y-%m-%d %H:%M:%S").replace(tzinfo=pytz.timezone("Europe/Moscow"))
+        task_changed = datetime.strptime(
+            changed, "%Y-%m-%d %H:%M:%S")
+        task_chaged = task_chaged.replace(
+            tzinfo=pytz.timezone("Europe/Moscow"))
         delta = task_changed - now
         if delta.days > days:
             task_to_ideas += [str(tid)]
@@ -44,7 +48,7 @@ def land_user(uid, days):
 
 def life():
     cursor = db.get_cursor()
-    cursor.execute( "select * from users")
+    cursor.execute("select * from users")
     users = cursor.fetchall()
     if users:
         for uid, name, days in users:
@@ -54,8 +58,8 @@ def life():
     db.get_connection().commit()
 
 
-schedule.every().day.do(life)
+schedule.every().hour.do(life)
 
 while True:
     schedule.run_pending()
-    time.sleep(3600 *24)
+    time.sleep(3600)
