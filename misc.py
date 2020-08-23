@@ -13,7 +13,6 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -45,4 +44,3 @@ async def get_jedy(chat_id, state: FSMContext):
         return new_bot
 
     return data['bot']
-

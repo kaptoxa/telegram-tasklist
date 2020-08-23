@@ -4,7 +4,8 @@ from tasklist import TaskStage
 
 from pprint import pprint
 
-# States
+
+# States of bot
 class Phase(Helper):
     mode = HelperMode.snake_case
 
@@ -16,7 +17,8 @@ class Phase(Helper):
     EDIT_ARCH = ListItem()
 
     def get(stage):
-    #  trick to avoid sorted items problem that Helper does alphabetically
+        #  trick to avoid sorted items mistake
+        #  that Helper does alphabetically
         return Phase.all()[(stage.value + 4) % 6]
 
     async def get_stage(state: FSMContext):
@@ -29,4 +31,3 @@ class Phase(Helper):
             stage = TaskStage.DONE
 
         return stage
-
