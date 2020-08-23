@@ -9,7 +9,8 @@ from aiogram.dispatcher import FSMContext
 from misc import dp, logger, get_jedy, replicas
 
 
-@dp.message_handler(state='*', commands=['start', 'help', 'howto', 'dzen', 'man'])
+@dp.message_handler(
+        state='*', commands=['start', 'help', 'howto', 'dzen', 'man'])
 async def send_welcome(message: types.Message, state: FSMContext):
     """Show hello message to help with bot"""
     logger.debug(f"Send welcome handler text: {message.text} !")
@@ -56,7 +57,9 @@ async def review(message: types.Message, state: FSMContext):
         return
 
     to_post = [(i.id, i.text) for i in full_list]
-    await message.answer(replicas['review'], reply_markup=review_keyboard(to_post))
+    await message.answer(
+        replicas['review'],
+        reply_markup=review_keyboard(to_post))
 
 
 @dp.message_handler(state='*', commands=['tag'])

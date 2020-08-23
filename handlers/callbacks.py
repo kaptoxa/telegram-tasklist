@@ -9,7 +9,6 @@ from misc import logger, bot, dp, todo_cb, task_cb
 from misc import get_jedy, replicas
 
 
-
 def format_post(task: Task) -> (str, types.InlineKeyboardMarkup):
     logger.debug(f" format_post :: {task.text}")
 
@@ -17,23 +16,31 @@ def format_post(task: Task) -> (str, types.InlineKeyboardMarkup):
         md.hbold(task.text), '', md.hbold('tags:', task.tags),
         f"{replicas['task']['created_date']}: {task.created}",
         f"{replicas['task']['changed_date']}: {task.changed}",
-        sep = '\n',
+        sep='\n',
     )
 
-    all_buttons = {2:  types.InlineKeyboardButton(replicas['task']['done'],
-        callback_data=task_cb.new(id=task.id, action='done')),
-        0: types.InlineKeyboardButton(replicas['task']['idea'],
+    all_buttons = {
+        TaskStage.DONE: types.InlineKeyboardButton(
+            replicas['task']['done'],
+            callback_data=task_cb.new(id=task.id, action='done')),
+        TaskStage.IDEA: types.InlineKeyboardButton(
+            replicas['task']['idea'],
             callback_data=task_cb.new(id=task.id, action='idea')),
-        1: types.InlineKeyboardButton(replicas['task']['todo'],
+        TaskStage.TODO: types.InlineKeyboardButton(
+            replicas['task']['todo'],
             callback_data=task_cb.new(id=task.id, action='todo')),
-        'cancel': types.InlineKeyboardButton(replicas['task']['cancel'],
+        'cancel': types.InlineKeyboardButton(
+            replicas['task']['cancel'],
             callback_data=task_cb.new(id=task.id, action='cancel'))
         }
-    del all_buttons[task.stage]
+    del all_buttons[TaskStage(task.stage)]
 
     markup = types.InlineKeyboardMarkup()
-    markup.row( *all_buttons.values())
-    markup.add(types.InlineKeyboardButton('<< Back', callback_data=task_cb.new(id=task.id, action='list')))
+    markup.row(*all_buttons.values())
+    markup.add(
+        types.InlineKeyboardButton(
+            '<< Back',
+            callback_data=task_cb.new(id=task.id, action='list')))
     return text, markup
 
 
@@ -52,16 +59,24 @@ async def show_tasklist(query: types.CallbackQuery, state: FSMContext):
     to_post = [(i.id, i.text) for i in full_list]
     text = f"{replicas['list'][str(stage)]} ({len(to_post)})"
     await query.message.edit_text(text,
-            reply_markup=get_keyboard(to_post))
+                                  reply_markup=get_keyboard(to_post))
 
 
 @dp.callback_query_handler(task_cb.filter(action='list'), state='*')
-async def query_list(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
+async def query_list(
+        query: types.CallbackQuery,
+        callback_data: dict,
+        state: FSMContext):
+
     await show_tasklist(query, state)
 
 
 @dp.callback_query_handler(todo_cb.filter(action='view'), state='*')
-async def query_view(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
+async def query_view(
+        query: types.CallbackQuery,
+        callback_data: dict,
+        state: FSMContext):
+
     task_id = int(callback_data['id'])
     jbot = await get_jedy(query.from_user.id, state)
     task = jbot.get_task(task_id)
@@ -75,14 +90,20 @@ async def query_view(query: types.CallbackQuery, callback_data: dict, state: FSM
     elif stage == TaskStage.IDEA:
         await state.set_state(Phase.EDIT_IDEA[0])
     elif stage == TaskStage.DONE:
-        await state.set_state(Phase.EDIT_ARCH[0]) 
+        await state.set_state(Phase.EDIT_ARCH[0])
 
     text, markup = format_post(task)
     await query.message.edit_text(text, reply_markup=markup)
 
 
-@dp.callback_query_handler(task_cb.filter(action=['done', 'idea', 'todo', 'cancel']), state='*')
-async def query_taskedit(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
+@dp.callback_query_handler(
+        task_cb.filter(action=['done', 'idea', 'todo', 'cancel']),
+        state='*')
+async def query_taskedit(
+        query: types.CallbackQuery,
+        callback_data: dict,
+        state: FSMContext):
+
     task_id = int(callback_data['id'])
     action = callback_data['action']
 
@@ -98,12 +119,15 @@ async def query_taskedit(query: types.CallbackQuery, callback_data: dict, state:
         jbot.update_task_stage(task.id, TaskStage(i))
 
     await query.answer(replicas['task']['changed'])
-
     await show_tasklist(query, state)
 
 
 @dp.callback_query_handler(todo_cb.filter(action=['review_done']), state='*')
-async def query_task_done(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
+async def query_task_done(
+        query: types.CallbackQuery,
+        callback_data: dict,
+        state: FSMContext):
+
     task_id = int(callback_data['id'])
     logger.info(f"query_task_done: {task_id}")
     jbot = await get_jedy(query.from_user.id, state)
@@ -119,5 +143,6 @@ async def query_task_done(query: types.CallbackQuery, callback_data: dict, state
         return
 
     to_post = [(i.id, i.text) for i in full_list]
-    await query.message.edit_text(replicas['review'],
-            reply_markup=review_keyboard(to_post))
+    await query.message.edit_text(
+        replicas['review'],
+        reply_markup=review_keyboard(to_post))
