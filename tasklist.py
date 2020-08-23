@@ -32,7 +32,7 @@ class TaskListBot():
 
     def new_user(self, name):
         cursor = db.get_cursor()
-        cursor.execute( f"select * from users where id={self.chat_id}")
+        cursor.execute(f"select * from users where id={self.chat_id}")
         row = cursor.fetchone()
         if row:
             return False
@@ -61,51 +61,54 @@ class TaskListBot():
 
     def update_task_stage(self, taskid: int, stage: TaskStage) -> bool:
         db.update("tasklist", {
-                    "stage": stage.value,
-                    "changed": f"\"{_get_now_formatted()}\""},
-                    {"id": ("=", taskid)})
+                  "stage": stage.value,
+                  "changed": f"\"{_get_now_formatted()}\""},
+                  {"id": ("=", taskid)})
         return True
 
     def update_task_text(self, taskid: int, text: str) -> bool:
         db.update("tasklist", {
-                    "text": f"\"{text}\"",
-                    "changed": f"\"{_get_now_formatted()}\""},
-                    {"id": ("=", taskid)})
+                  "text": f"\"{text}\"",
+                  "changed": f"\"{_get_now_formatted()}\""},
+                  {"id": ("=", taskid)})
         return True
 
     def update_days(self, days: int) -> bool:
         db.update("users", {"days": days},
-                    {"id": ("=", self.chat_id)})
+                  {"id": ("=", self.chat_id)})
         return True
 
     def tasks(self) -> List[Task]:
         """ return all tasks """
-        rows = db.fetchall("tasklist", ["*"],
-                    {"user_id": ("=", self.chat_id)})
+        rows = db.fetchall(
+            "tasklist", ["*"],
+            {"user_id": ("=", self.chat_id)})
         task_list = [Task(*row[:-1]) for row in rows]
         # clip this field because this is chat id
         return task_list
 
     def tasks_list(self, stage: TaskStage) -> List[Task]:
         """ return tasks for the stage """
-        return list(filter(lambda task: task.stage == stage.value, self.tasks()))
+        return list(filter(
+                        lambda task: task.stage == stage.value,
+                        self.tasks()))
 
     def tag_list(self, tag: str, stage: TaskStage) -> List[Task]:
-        return list(filter(lambda task: (tag in task.tags),
-                self.tasks_list(stage)))
+        return list(filter(
+                            lambda task: (tag in task.tags),
+                            self.tasks_list(stage)))
 
     def get_task(self, tid) -> Task:
         """ return the task by its id """
         row = db.fetchone("tasklist", ["*"],
-                {"user_id": ("=", self.chat_id),
-                "id": ("=", tid)})
+                          {"user_id": ("=", self.chat_id),
+                          "id": ("=", tid)})
         if row:
             task = Task(*row[:-1])
             return task
         else:
             raise exceptions.NotCorrectTaskID("getting task...")
         return
-
 
     def delete_task(self, row_id: int) -> None:
         db.delete("tasklist", row_id)
