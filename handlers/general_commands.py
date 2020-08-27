@@ -29,13 +29,19 @@ async def full_task_list(message: types.Message, state: FSMContext):
     """Show tasklist for a stage"""
     logger.debug(f"Commands handler {message.text}")
     jbot = await get_jedy(message.from_user.id, state)
+    text = message.text.split()
+    tag = ''
+    try:
+        command, tag = text[0:2]
+    except ValueError:
+        command = text[0]
 
-    stage = TaskStage(['/ideas', '/todo', '/archive'].index(message.text))
+    stage = TaskStage(['/ideas', '/todo', '/archive'].index(command))
     await state.set_state(Phase.get(stage))
 
-    full_list = jbot.tasks_list(stage)
+    full_list = jbot.tag_list(tag, stage) if tag else jbot.tasks_list(stage)
     if not full_list:
-        await message.answer(replicas['empty_list'][str(stage.value)])
+        await message.answer(replicas['empty_list'][str(stage)])
         return
 
     to_post = [(i.id, i.text) for i in full_list]
@@ -51,9 +57,9 @@ async def review(message: types.Message, state: FSMContext):
 
     stage = TaskStage.TODO
     await state.set_state(Phase.get(stage))
-    full_list = jbot.tasks_list(stage)
+    full_list = jbot.tag_list(stage)
     if not full_list:
-        await message.answer(replicas['empty_list'][str(stage.value)])
+        await message.answer(replicas['empty_list'][str(stage)])
         return
 
     to_post = [(i.id, i.text) for i in full_list]
@@ -67,7 +73,10 @@ async def tag(message: types.Message, state: FSMContext):
     """Show task for the tag"""
     logger.info(f"Tag handler {message.text}")
     jbot = await get_jedy(message.from_user.id, state)
-    tag = message.text.split()[1]
+    try:
+        tag = message.text.split()[1]
+    except IndexError:
+        return
 
     stage = await Phase.get_stage(state)
     full_list = jbot.tag_list(tag, stage)
@@ -89,6 +98,8 @@ async def tag(message: types.Message, state: FSMContext):
         x = int(message.text.split()[1])
     except ValueError:
         await message.answer(replicas['wrong_days'])
+        return
+    except IndexError:
         return
 
     jbot.update_days(x)

@@ -126,11 +126,9 @@ def _get_now_datetime() -> datetime.datetime:
 
 def _parse_message(msg):
     """ tags are words that started with '#' """
-    task = []
     tags = []
     for word in msg.split():
-        if word[0] == '#':
+        if word.startswith(('#', '@')):
             tags += [word]
-        else:
-            task += [word]
-    return ' '.join(task), ' '.join(tags)
+            msg = msg.replace(word, '')
+    return msg, ' '.join(tags)

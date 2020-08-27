@@ -31,12 +31,14 @@ def land_user(uid, days):
     task_to_ideas = []
     for tid, changed in rows:
         print(f"task {tid} was changed at {changed}")
-        task_changed = datetime.strptime(
+        then = datetime.strptime(
             changed, "%Y-%m-%d %H:%M:%S")
-        task_chaged = task_chaged.replace(
+        then = then.replace(
             tzinfo=pytz.timezone("Europe/Moscow"))
-        delta = task_changed - now
-        if delta.days > days:
+
+        delta = now - then
+        print(tid, delta.days, delta)
+        if delta.days > days or (then.day != now.day and days == 1):
             task_to_ideas += [str(tid)]
 
     if task_to_ideas:
@@ -47,6 +49,7 @@ def land_user(uid, days):
 
 
 def life():
+    print(f"checking users...")
     cursor = db.get_cursor()
     cursor.execute("select * from users")
     users = cursor.fetchall()
@@ -56,7 +59,6 @@ def life():
             land_user(uid, days)
 
     db.get_connection().commit()
-
 
 schedule.every().hour.do(life)
 
