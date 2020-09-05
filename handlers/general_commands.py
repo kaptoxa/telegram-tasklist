@@ -2,7 +2,7 @@ import exceptions
 from tasklist import TaskListBot, TaskStage
 from phase import Phase
 
-from keyboards import get_keyboard, review_keyboard
+import keyboards
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 
@@ -30,23 +30,23 @@ async def full_task_list(message: types.Message, state: FSMContext):
     logger.debug(f"Commands handler {message.text}")
     jbot = await get_jedy(message.from_user.id, state)
     text = message.text.split()
-    tag = ''
+    tags = []
     try:
-        command, tag = text[0:2]
+        command, *tags = text
     except ValueError:
-        command = text[0]
+        command = text
 
     stage = TaskStage(['/ideas', '/todo', '/archive'].index(command))
     await state.set_state(Phase.get(stage))
 
-    full_list = jbot.tag_list(tag, stage) if tag else jbot.tasks_list(stage)
+    full_list = jbot.tasks_by_tag(set(tags), stage) if tags else jbot.tasks_list(stage)
     if not full_list:
         await message.answer(replicas['empty_list'][str(stage)])
         return
 
     to_post = [(i.id, i.text) for i in full_list]
     text = f"{replicas['list'][str(stage)]} ({len(to_post)})"
-    await message.answer(text, reply_markup=get_keyboard(to_post))
+    await message.answer(text, reply_markup=keyboards.tasks(to_post, ' '.join(tags)))
 
 
 @dp.message_handler(state='*', commands=['review'])
@@ -57,7 +57,7 @@ async def review(message: types.Message, state: FSMContext):
 
     stage = TaskStage.TODO
     await state.set_state(Phase.get(stage))
-    full_list = jbot.tag_list(stage)
+    full_list = jbot.tasks_list(stage)
     if not full_list:
         await message.answer(replicas['empty_list'][str(stage)])
         return
@@ -65,28 +65,22 @@ async def review(message: types.Message, state: FSMContext):
     to_post = [(i.id, i.text) for i in full_list]
     await message.answer(
         replicas['review'],
-        reply_markup=review_keyboard(to_post))
+        reply_markup=keyboards.review(to_post))
 
 
-@dp.message_handler(state='*', commands=['tag'])
+@dp.message_handler(state='*', commands=['tags'])
 async def tag(message: types.Message, state: FSMContext):
     """Show task for the tag"""
     logger.info(f"Tag handler {message.text}")
     jbot = await get_jedy(message.from_user.id, state)
-    try:
-        tag = message.text.split()[1]
-    except IndexError:
-        return
 
-    stage = await Phase.get_stage(state)
-    full_list = jbot.tag_list(tag, stage)
+    full_list = jbot.tags_list()
     if not full_list:
         await message.answer(replicas['no_task4tag'])
         return
 
-    to_post = [(i.id, i.text) for i in full_list]
-    text = f"{replicas['tag_tasks']} {tag} ({str(len(to_post))})"
-    await message.answer(text, reply_markup=get_keyboard(to_post))
+    text = f"{replicas['tags']} ({str(len(full_list))})"
+    await message.answer(text, reply_markup=keyboards.tags(full_list))
 
 
 @dp.message_handler(state='*', commands=['days'])

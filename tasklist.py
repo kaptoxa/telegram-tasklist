@@ -93,10 +93,18 @@ class TaskListBot():
                         lambda task: task.stage == stage.value,
                         self.tasks()))
 
-    def tag_list(self, tag: str, stage: TaskStage) -> List[Task]:
-        return list(filter(
-                            lambda task: (tag in task.tags),
-                            self.tasks_list(stage)))
+    def tasks_by_tag(self, tags: set, stage: TaskStage) -> List[Task]:
+        def cut_tag(word):
+            return word.strip('#').strip('@')
+
+        return list(
+                filter(
+                       lambda t: tags <= set(map(cut_tag, t.tags.split())),
+                       self.tasks_list(stage))
+                )
+
+    def tags_list(self) -> set:
+        return set(task.tags for task in self.tasks())
 
     def get_task(self, tid) -> Task:
         """ return the task by its id """

@@ -1,5 +1,6 @@
 import logging
 
+
 import os
 import json
 
@@ -13,7 +14,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s",)
 logger = logging.getLogger(__name__)
 
 API_TOKEN = os.getenv('API_TOKEN')
@@ -27,8 +28,8 @@ with open("replicas.json", "r") as r_file:
     replicas = json.load(r_file)
 
 
-todo_cb = CallbackData('todo', 'id', 'action')  # post:<id>:<action>
-task_cb = CallbackData('task', 'id', 'action')  # post:<id>:<action>
+todo_cb = CallbackData('todo', 'id', 'action', 'tags')  # post:<id>:<action>
+task_cb = CallbackData('task', 'id', 'action', 'tags')  # post:<id>:<action>
 
 
 async def get_jedy(chat_id, state: FSMContext):
